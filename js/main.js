@@ -38,22 +38,22 @@ const getElement = (tagName, classNames, attributes) => {
 	return element;
 }
 
-const createHeader = (param) => {
+const createHeader = ( { title, header: { logo, menu, social }}) => {
 	const header = getElement('header');
 	const container = getElement('div', ['container']);
 	const wrapper = getElement('div', ['header']);
 
-	if(param.header.logo) {
-		const logo = getElement('img', ['logo'], {
-			src: param.header.logo,
-			alt: 'Логотип ' + param.title,
+	if(logo) {
+		const logoElem = getElement('img', ['logo'], {
+			src: logo,
+			alt: 'Логотип ' + title,
 		});
-		wrapper.append(logo);
+		wrapper.append(logoElem);
 	}
 
-	if (param.header.menu) {
+	if (menu) {
 		const nav = getElement('nav', ['menu-list']);
-		const allMenuLink = param.header.menu.map(item => {
+		const allMenuLink = menu.map(item => {
 			const link = getElement('a', ['menu-link'], {
 				href: item.link,
 				textContent: item.title,
@@ -62,11 +62,18 @@ const createHeader = (param) => {
 		})
 		nav.append(...allMenuLink);
 		wrapper.append(nav);
+
+		const menuBtn = getElement('button', ['menu-button']);
+		menuBtn.addEventListener('click', () => {
+			menuBtn.classList.toggle('menu-button-active');
+			wrapper.classList.toggle('header-active');
+		});
+		container.append(menuBtn);
 	}
 
-	if (param.header.social) {
+	if (social) {
 		const socialWrapper = getElement('div', ['social']);
-		const allSocial = param.header.social.map(item => {
+		const allSocial = social.map(item => {
 			const socialLink = getElement('a', ['social-link']);
 			socialLink.append(getElement('img', [], {
 				src: item.image,
@@ -89,7 +96,7 @@ const createHeader = (param) => {
 
 const createMain = ({ 
 	title, 
-	main: { genre, rating, description, trailer }}) => {
+	main: { genre, rating, description, trailer, slider }}) => {
 	
 	const main = getElement('main');
 	const container = getElement('div', ['container']);
@@ -166,12 +173,89 @@ const createMain = ({
 		wrapper.append(yuotubeImageLink);
 	}
 
+	if (slider) {
+	const sliderBlock = getElement('div', ['series']);
+	const swiperBlock = getElement('div', ['swiper-container']);
+	const swiperWrapper = getElement('div', ['swiper-wrapper']);
+	const arrow = getElement('button', ['arrow']);
+
+	const slides = slider.map(item => {
+
+		const swiperSlide = getElement('a', ['swiper-slide'], {
+			href: '#'
+		});
+		const card = getElement('figure', ['card']);
+		const cardImage = getElement('img', ['card-img'], {
+			src: item.img,
+			alt: ((item.title || '') + ' ' + (item.subtitle || '')).trim()
+		})
+
+		card.append(cardImage);
+
+		if (item.title || item.subtitle) {
+			const cardDescription = getElement('figcaption', ['card-description']);
+			cardDescription.innerHTML = `
+			${item.subtitle ? `<p class="card-subtitle">${item.subtitle}</p>` : ''}
+			${item.title ? `<p class="card-title">${item.title}</p>` : ''}
+			`;
+
+			card.append(cardDescription)
+		}
+		swiperSlide.append(card);
+		return swiperSlide;
+	});
+
+	swiperWrapper.append(...slides);
+	swiperBlock.append(swiperWrapper);
+	sliderBlock.append(swiperBlock, arrow);
+
+	container.append(sliderBlock);
+
+	new Swiper(swiperBlock, {
+		loop: true,
+		navigation: {
+			nextEl: arrow,
+		},
+		breakpoints: {
+			320: {
+				sliderPerView: 1,
+				spaceBetween: 20
+			},
+			541: {
+				sliderPerView: 2,
+				spaceBetween: 40
+			}
+		}
+	});
+}
+
 	return main;
 };
 
 const movieConstructor = (selector, options) => {
+
 	const app = document.querySelector(selector);
 	app.classList.add('body-app');
+
+	app.style.color = options.fontColor || '';
+	app.style.backgroundColor = options.backgroundColor || '';
+
+	if (options.subColor) {
+		document.documentElement.style.setProperty('--sub-color', options.subColor);
+	}
+
+	if (options.favicon) {
+		const index = options.favicon.lastIndexOf('.');
+		const type = options.favicon.substring(index + 1);
+
+		const favicon = getElement('link', null, {
+			rel: 'icon',
+			href: options.favicon,
+			type: 'image/' + (type === 'svg' ? 'svg-html' : type)
+		});
+
+		document.head.append(favicon);
+	}
 
 	app.style.backgroundImage = options.background ? 
 	`url('${options.background}')` : '';
@@ -189,25 +273,29 @@ const movieConstructor = (selector, options) => {
 };
 
 movieConstructor('.app', {
-	title: 'Ведьмак',
-	background: 'witcher/background.jpg',
+	title: 'Локи',
+	background: 'loki/background.jpg',
+	favicon: 'loki/favicon.png',
+	fontColor: '#fffff',
+	backgroundColor: '#000',
+	subColor: '#014206',
 	header: {
-		logo: 'witcher/logo.png',
+		logo: 'loki/logo.png',
 		social: [
 			{
 				title: 'Twitter',
 				link: 'https://twitter.com/',
-				image: 'witcher/social/twitter.svg',
+				image: 'loki/social/twitter.svg',
 			},
 			{
 				title: 'Instagram',
 				link: 'https://instagram.com/',
-				image: 'witcher/social/instagram.svg',
+				image: 'loki/social/instagram.svg',
 			},
 			{
 				title: 'Facebook',
 				link: 'https://facebook.com/',
-				image: 'witcher/social/facebook.svg',
+				image: 'loki/social/facebook.svg',
 			},
 		],
 		menu: [
@@ -226,9 +314,41 @@ movieConstructor('.app', {
 		]
 	},
 	main : {
-		genre: '2019,фэнтези',
-		rating: '8',
-		description: 'Ведьмак Геральт, мутант и убийца чудовищ, на своей верной лошади по кличке Плотва путешествует по Континенту. За туго...',
-		trailer: 'https://www.youtube.com/watch?v=P0oJqfLzZzQ',
-	},
+        genre: '2021, фантастика, фэнтези, боевик, приключения',
+        rating: '8',
+        description: 'Локи попадает в таинственную организацию «Управление временными изменениями» после того, как он украл Тессеракт, и путешествует во времени, меняя историю.',
+        trailer: 'https://youtu.be/YrjHcYqe31g',
+        slider: [
+            {
+            img: 'loki/series/series-1.jpg',
+            title: 'Славная миссия',
+            subtitle: 'Серия №1',
+            }, 
+            {
+            img: 'loki/series/series-2.jpg',
+            title: 'Вариант',
+            subtitle: 'Серия №2',
+            }, 
+            {
+            img: 'loki/series/series-3.jpg',
+            title: 'Ламентис',
+            subtitle: 'Серия №3',
+            }, 
+            {
+            img: 'loki/series/series-4.jpg',
+            title: 'Смежное событие',
+            subtitle: 'Серия №4',
+            },
+            {
+            img: 'loki/series/series-5.jpg',
+            title: 'Путешествие в неизвестность',
+            subtitle: 'Серия №5',
+            },
+            {
+            img: 'loki/series/series-6.jpg',
+            title: 'На все времена. Всегда',
+            subtitle: 'Серия №6',
+            }
+        ]
+        },
 });

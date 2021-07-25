@@ -1,10 +1,16 @@
 html {
     --sub-color: #9D2929;
+    overflow-x: hidden;
 }
 
 img {
     max-width: 100%;
     height: auto;
+}
+
+body {
+    position: relative;
+    overflow-x: hidden;
 }
 
 
